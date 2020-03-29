@@ -7,8 +7,9 @@ segment .rodata
 segment .text
 global main
     main:
-        pushaq
+        push rbp
+        mov rbp, rsp
 
-        popaq
-        mov rax, 0
+        xor rax, rax
+        leave
         ret

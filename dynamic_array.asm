@@ -2,14 +2,17 @@ extern malloc
 extern realloc
 extern free
 
-global init
-global delete
-global delete_each
-global append_value
-global pop_value
-global get_by_index
-global shrink_to_fit
-global get_size
+global array_init
+global array_delete
+global array_delete_each
+global array_append_value
+global array_pop_value
+global array_get_by_index
+global array_shrink_to_fit
+global array_get_size
+global array_extend
+global array_extend_from_mem
+
 
 
 INIT_LENGTH equ 32
@@ -26,42 +29,39 @@ segment .text
     mov rbx, 0
     syscall
 
-    init:
+    array_init:
         ;generates array with length and allocated in first 2 items
         ;length does not include first 2 elements but the allocated_length does
         ;length is needed for counting items in the array
         push rbp
         mov rbp, rsp
 
-        push INIT_LENGTH*8
+        mov rdi, INIT_LENGTH*8
         call malloc
-        add rsp, 8
-
         mov qword [rax+dynamic.length], 0
         mov qword [rax+dynamic.allocated], INIT_LENGTH
-        mov rsp, rbp
-        pop rbp
+
+        leave
         ret
     
-    delete:
+    array_delete:
+        ;param rdi - address of array
         push rbp
         mov rbp, rsp
 
-        mov rdi, rcx
         call free
         xor rax, rax
 
-        mov rsp, rbp
-        pop rbp
+        leave
         ret
     
-    delete_each:
-        ;param rcx - address of array
+    array_delete_each:
+        ;param rdi - address of array
         push rbp
         mov rbp, rsp
 
-        push rcx
-        mov rcx, [rcx]
+        push rdi
+        mov rcx, [rdi+dynamic.length]
         cmp rcx, 0
         jz not_deleting
         
@@ -70,8 +70,10 @@ segment .text
             dec rdi
             shl rdi, 3
             add rdi, dynamic.data
-            add rdi, qword [rcx]
+            add rdi, [rsp]
+            push rcx
             call free
+            pop rcx
         loop deleting
         not_deleting:
 
@@ -79,17 +81,17 @@ segment .text
         call free
         xor rax, rax
         
-        mov rsp, rbp
-        pop rbp
+        leave
         ret
     
-    check_space:
+    array_check_space:
+        ;param rdi - address of array
         ;returns new address if reallocates (or old one if does not)
         push rbp
         mov rbp, rsp
 
-        mov r8, [rcx+dynamic.length]
-        mov r9, [rcx+dynamic.allocated]
+        mov r8, [rdi+dynamic.length]
+        mov r9, [rdi+dynamic.allocated]
         mov rsi, r9
         sub r9, r8
         shl r9, 4
@@ -97,27 +99,27 @@ segment .text
         
         jg enough_space
             shl rsi, 1
-            mov [rcx+dynamic.allocated], rsi
+            mov [rdi+dynamic.allocated], rsi
             shl rsi, 3
-            mov rdi, rcx
             call realloc
             jmp exit_check_space
         enough_space:
-            mov rax, rcx
+            mov rax, rdi
         exit_check_space:
 
-        mov rsp, rbp
-        pop rbp
+        leave
         ret
     
-    append_value:
+    array_append_value:
         ;returns new address if reallocates
-        ;param rcx - address of array
-        ;param rdx - value
+        ;param rdi - address of array
+        ;param rsi - value
         push rbp
         mov rbp, rsp
 
-        call check_space
+        push rsi
+        call array_check_space
+        pop rsi
         mov r8, rax
         add r8, dynamic.data
         mov r9, [rax+dynamic.length]
@@ -126,56 +128,108 @@ segment .text
         mov [rax+dynamic.length], r10
         shl r9, 3
         add r8, r9
-        mov [r8], rdx
+        mov [r8], rsi
 
-        mov rsp, rbp
-        pop rbp
+        leave
         ret
     
-    get_by_index:
-        ;param rcx - address of array
-        ;param rdx - index
+    array_get_by_index:
+        ;param rdi - address of array
+        ;param rsi - index
         ;returns address of item
-        mov rax, rdx
+        mov rax, rsi
         shl rax, 3
-        add rax, rcx
+        add rax, rdi
         add rax, dynamic.data
         ret
     
-    pop_value:
-        ;param rcx - address of array
+    array_pop_value:
+        ;param rdi - address of array
         ;deletes last item and returns its value
-        mov rdx, [rcx+dynamic.length]
+        mov rdx, [rdi+dynamic.length]
         cmp rdx, 0
         jng nothing_to_pop
             dec rdx
-            mov [rcx+dynamic.length], rdx
-            call get_by_index
+            mov [rdi+dynamic.length], rdx
+            mov rsi, rdx
+            call array_get_by_index
             mov rax, [rax]
             ret
         nothing_to_pop:
             mov rax, 0
             ret
     
-    shrink_to_fit:
-        ;param rcx - address of array
+    array_shrink_to_fit:
+        ;param rdi - address of array
         ;returns address of reallocated array
         push rbp
         mov rbp, rsp
 
-        mov rsi, [rcx+dynamic.length]
+        mov rsi, [rdi+dynamic.length]
         add rsi, 2
-        mov [rcx+dynamic.allocated], rsi
+        mov [rdi+dynamic.allocated], rsi
         shl rsi, 3
-        mov rdi, rcx
         call realloc
         
-        mov rsp, rbp
-        pop rbp
+        leave
         ret
 
-    get_size:
-        ;param rcx - address of array
+    array_get_size:
+        ;param rdi - address of array
         ;returns array size
-        mov rax, [rcx+dynamic.length]
+        mov rax, [rdi+dynamic.length]
+        ret
+    
+    array_extend:
+        ;param rdi - address of array
+        ;param rsi - address of other array
+        ;returns address of array
+        push rbp
+        mov rbp, rsp
+
+        mov rdx, [rsi+dynamic.length]
+        add rsi, dynamic.data
+        call array_extend_from_mem
+       
+        leave
+        ret
+
+    array_extend_from_mem:
+        ;param rdi - address of array
+        ;param rsi - address from where to copy
+        ;param rdx - count of qwords to copy
+        ;returns address of array
+        push rbp
+        mov rbp, rsp
+
+        cmp rdx, 0
+        jng not_extending
+
+        mov rcx, rdx
+        push rsi
+        push rdi
+        push rcx
+        mov rsi, rdx
+        add rsi, [rdi+dynamic.allocated]
+        call realloc
+        pop rcx
+        pop rdi
+        pop rsi
+        push rax
+
+        mov r8, [rdi+dynamic.length]
+        mov r9, r8
+        add r8, rcx
+        mov [rdi+dynamic.length], r8
+
+        add rdi, r9
+        add rdi, dynamic.data
+        rep movsq
+        pop rax
+        jmp exit_extend
+
+        not_extending:
+            mov rax, rdi
+        exit_extend:
+        leave
         ret
