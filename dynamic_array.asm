@@ -12,15 +12,16 @@ global array_shrink_to_fit
 global array_get_size
 global array_extend
 global array_extend_from_mem
+global array_clear
 
 
-
-INIT_LENGTH equ 32
+INIT_LENGTH equ 4
 
 struc dynamic
+    ;structure of dynamic array
     .length resq 1    ;count of qword values
     .allocated resq 1 ;maximum qword values
-    .data resq 0      ;offset of data
+    .data resq 0      ;offset of data (it is of course not zero, but some varying number)
 endstruc
 
 
@@ -30,9 +31,10 @@ segment .text
     syscall
 
     array_init:
-        ;generates array with length and allocated in first 2 items
-        ;length does not include first 2 elements but the allocated_length does
-        ;length is needed for counting items in the array
+        ;generates array with 'length' and 'allocated' in first 2 items
+        ;'length' does not include first 2 elements but the 'allocated' does
+        ;'length' is needed for counting items in the array
+        ;(look for "struc dynamic" in this file to understand better)
         push rbp
         mov rbp, rsp
 
@@ -93,6 +95,7 @@ segment .text
         mov r8, [rdi+dynamic.length]
         mov r9, [rdi+dynamic.allocated]
         mov rsi, r9
+        sub r9, 2
         sub r9, r8
         shl r9, 4
         cmp r9, rsi
@@ -232,4 +235,9 @@ segment .text
             mov rax, rdi
         exit_extend:
         leave
+        ret
+
+    array_clear:
+        ;param rdi - address of array
+        mov qword [rdi+dynamic.length], 0
         ret
