@@ -1,4 +1,71 @@
+global compare_strings_sse
+
 segment .text
-    mov rax, 60
-    mov rbx, 0
-    syscall
+    compare_strings_sse:
+        ;param rdi - 1st string
+        ;param rsi - 2nd strng
+        ;compares strings by the alphabet
+        ;NOTE: strings must be contained in fields of length that divisible by 16
+        ;NOTE: also fields with strings must be aligned to 16
+        ;returns 1 if 1st string is greater, -1 if it's less and 0 if they are equal
+        ;well, it might work pretty fast...
+        push rbp
+        mov rbp, rsp
+
+        xor rax, rax ;will be a result
+        xor r8, r8 ;stop flag
+        comparing:
+            movdqa xmm0, [rdi]
+            movdqa xmm1, [rsi]
+            add rdi, 16
+            add rsi, 16
+            ;read xmmword from each string
+
+            mov r15, 0001020304050607h
+            movq xmm3, r15
+            shufpd xmm3, xmm3, 00b
+            mov r15, 08090A0B0C0D0E0Fh
+            movq xmm3, r15
+            pshufb xmm0, xmm3
+            pshufb xmm1, xmm3
+            ;translated little-endian to big-endian
+
+            movdqa xmm2, xmm0
+            pxor xmm3, xmm3
+            pcmpeqb xmm3, xmm0
+            pmovmskb eax, xmm3
+            cmp ax, 0
+            je continue_1
+                inc r8
+            continue_1:
+            pxor xmm3, xmm3
+            pcmpeqb xmm3, xmm1
+            pmovmskb eax, xmm3
+            cmp ax, 0
+            je continue_2
+                inc r8
+            continue_2:
+            
+            pcmpgtb xmm0, xmm1
+            pmovmskb eax, xmm0 ;mask of 1 and 2 strings substraction
+            pcmpgtb xmm1, xmm2
+            pmovmskb ebx, xmm1 ;mask of 2 and 1 strings substraction
+            cmp ax, bx
+            jg greater
+            jl less
+            jmp check_if_end
+                
+            greater:
+                dec rax
+                inc r8
+                jmp check_if_end
+            less:
+                inc rax
+                inc r8
+
+            check_if_end:
+            cmp r8, 0
+            je comparing
+        
+        leave
+        ret

@@ -26,9 +26,6 @@ endstruc
 
 
 segment .text
-    mov rax, 60
-    mov rbx, 0
-    syscall
 
     array_init:
         ;generates array with 'length' and 'allocated' in first 2 items
