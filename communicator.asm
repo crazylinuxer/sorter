@@ -1,4 +1,3 @@
-extern printf
 extern malloc
 
 extern array_init
@@ -12,14 +11,16 @@ extern array_pop_value
 global ask_file
 global ask_mode
 
+
 segment .rodata
     mode_message db "Choose operation mode:", 10
                  db "    [1] - Fast mode (uses A LOT of memory)", 10
                  db "    [2] - Normal mode (uses less memory.. but still uses)", 10
                  db "    [3] - Slow mode (does not use any additional memory)", 10, 10, 0
+    mode_message_len equ $-mode_message
     err_message  db "Incorrect input, try again!", 10, 0
     err_message_len equ $-err_message
-    file_message db "Enter file name (cannot contain non-ASCII): ", 0
+    file_message db "Enter the file name: ", 0
     file_message_len equ $-file_message
 
 segment .text
@@ -101,9 +102,10 @@ segment .text
         mov rdi, [rsp+8]
         xor rsi, rsi
         call array_get_by_index
-        mov rsi, rax
-        mov rdi, [rsp+8]
+        push rax
+        mov rdi, [rsp+16]
         call array_get_size
+        pop rsi
         mov rcx, rax
         mov rdi, [rsp]
         rep movsq
@@ -121,10 +123,11 @@ segment .text
         push rbp
         mov rbp, rsp
 
-        mov rdi, mode_message
-        xor rsi, rsi
-        xor rax, rax
-        call printf
+        mov rax, 1
+        mov rdi, 1
+        mov rsi, mode_message
+        mov rdx, mode_message_len
+        syscall
         
         read_mode:
             push 0
