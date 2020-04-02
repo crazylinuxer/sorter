@@ -1,6 +1,8 @@
-extern malloc
 extern realloc
 extern free
+extern posix_memalign
+
+extern exit
 
 global array_init
 global array_delete
@@ -29,8 +31,11 @@ struc dynamic
 endstruc
 
 
-segment .text
+segment .rodata
+    alloc_error db "An error occured while allocating memory!", 10, 0
+    alloc_error_len equ $-alloc_error
 
+segment .text
     array_init:
         ;generates array with 'length' and 'allocated' in first 2 items
         ;'length' does not include first 2 elements but the 'allocated' does
@@ -39,9 +44,23 @@ segment .text
         push rbp
         mov rbp, rsp
 
-        mov edi, INIT_LENGTH*ITEM_SIZE
-            ;mov esi, INIT_ALIGNMENT
-        call malloc ;todo: rewrite for aligned_alloc
+        sub rsp, 8
+        mov rdi, rsp
+        mov edx, INIT_LENGTH*ITEM_SIZE
+        mov esi, INIT_ALIGNMENT
+        call posix_memalign
+        cmp eax, 0
+        je mem_ok
+            push rax
+            mov rax, 1
+            mov rdi, 0
+            mov rsi, alloc_error
+            mov rdx, alloc_error_len
+            syscall
+            pop rdi
+            call exit
+        mem_ok:
+        pop rax
         mov qword [rax+dynamic.length], 0
         mov qword [rax+dynamic.allocated], INIT_LENGTH
 
@@ -107,6 +126,16 @@ segment .text
             mov [rdi+dynamic.allocated], rsi
             shl rsi, LOG2_ITEM_SIZE
             call realloc
+            cmp rax, 0
+            jne realloc_ok
+                mov rax, 1
+                mov rdi, 0
+                mov rsi, alloc_error
+                mov rdx, alloc_error_len
+                syscall
+                mov edi, 1
+                call exit
+            realloc_ok:
             jmp exit_check_space
         enough_space:
             mov rax, rdi

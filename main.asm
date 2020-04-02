@@ -7,7 +7,7 @@ segment .text
         push rbp
         mov rbp, rsp
 
-        xor rax, rax
+        xor eax, eax
         leave
         ret
 

@@ -9,8 +9,6 @@ segment .text
         ;NOTE: also fields with strings should be aligned to 16
         ;returns 1 if 1st string is greater, -1 if it's less and 0 if they are equal
         ;well, it might work pretty fast...
-        push rbp
-        mov rbp, rsp
 
         xor rax, rax ;will be a result
         xor r8, r8 ;stop flag
@@ -87,5 +85,4 @@ segment .text
             cmp r8, 0
             je comparing
         
-        leave
         ret
