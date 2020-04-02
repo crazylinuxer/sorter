@@ -13,9 +13,13 @@ global array_get_size
 global array_extend
 global array_extend_from_mem
 global array_clear
+global array_to_usual
 
 
-INIT_LENGTH equ 4
+INIT_ALIGNMENT equ 16
+INIT_LENGTH    equ 2 * INIT_ALIGNMENT
+ITEM_SIZE      equ 8
+LOG2_ITEM_SIZE equ 3
 
 struc dynamic
     ;structure of dynamic array
@@ -35,8 +39,9 @@ segment .text
         push rbp
         mov rbp, rsp
 
-        mov rdi, INIT_LENGTH*8
-        call malloc
+        mov edi, INIT_LENGTH*ITEM_SIZE
+            ;mov esi, INIT_ALIGNMENT
+        call malloc ;todo: rewrite for aligned_alloc
         mov qword [rax+dynamic.length], 0
         mov qword [rax+dynamic.allocated], INIT_LENGTH
 
@@ -67,7 +72,7 @@ segment .text
         deleting:
             mov rdi, rcx
             dec rdi
-            shl rdi, 3
+            shl rdi, LOG2_ITEM_SIZE
             add rdi, dynamic.data
             add rdi, [rsp]
             push rcx
@@ -100,7 +105,7 @@ segment .text
         jg enough_space
             shl rsi, 1
             mov [rdi+dynamic.allocated], rsi
-            shl rsi, 3
+            shl rsi, LOG2_ITEM_SIZE
             call realloc
             jmp exit_check_space
         enough_space:
@@ -126,7 +131,7 @@ segment .text
         mov r10, r9
         inc r10
         mov [rax+dynamic.length], r10
-        shl r9, 3
+        shl r9, LOG2_ITEM_SIZE
         add r8, r9
         mov [r8], rsi
 
@@ -138,7 +143,7 @@ segment .text
         ;param rsi - index
         ;returns address of item
         mov rax, rsi
-        shl rax, 3
+        shl rax, LOG2_ITEM_SIZE
         add rax, rdi
         add rax, dynamic.data
         ret
@@ -168,7 +173,7 @@ segment .text
         mov rsi, [rdi+dynamic.length]
         add rsi, 2
         mov [rdi+dynamic.allocated], rsi
-        shl rsi, 3
+        shl rsi, LOG2_ITEM_SIZE
         call realloc
         
         leave
@@ -237,4 +242,26 @@ segment .text
     array_clear:
         ;param rdi - address of array
         mov qword [rdi+dynamic.length], 0
+        ret
+    
+    array_to_usual:
+        ;param rdi - address of array
+        ;casts the dynamic array to usual array
+        ;leaves some free space in the end
+        ;returns address of usual array
+        push rbp
+        mov rbp, rsp
+
+        push rdi
+        mov rsi, rdi
+        add rsi, dynamic.data
+        mov rcx, [rdi+dynamic.length]
+        mov rax, rcx
+        shl rax, LOG2_ITEM_SIZE
+        mov qword [rax+rsi], 0
+        inc rcx
+        rep movsq
+        pop rax
+
+        leave
         ret

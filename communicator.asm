@@ -7,9 +7,11 @@ extern array_get_by_index
 extern array_clear
 extern array_delete
 extern array_pop_value
+extern array_to_usual
 
 global ask_file
 global ask_mode
+global simple_print
 
 
 segment .rodata
@@ -65,8 +67,8 @@ segment .text
             mov rdi, [rsp+8]
             push rcx
             call array_get_size
-            pop rcx
-            mov [rsp], rax
+            mov [rsp], rcx
+            mov [rsp+8], rax
             cmp rcx, 8
             jne end_input_error
             cmp rax, 1
@@ -81,38 +83,27 @@ segment .text
                 syscall
                 jmp clear_and_input
             end_input_error:
-
-        mov rdi, [rsp]
-        inc rdi
-        shl rdi, 3
-        push rdi
-        call malloc
-        pop rdi
+        
         pop rcx
-        push rax
-        add rax, rdi
-        cmp rdi, 8
-        jng one_time
-            sub rax, 8
-            mov qword [rax], 0
-        one_time:
-        sub rax, 8
-        mov qword [rax], 0
-        
-        mov rdi, [rsp+8]
-        xor rsi, rsi
-        call array_get_by_index
-        push rax
+        neg rcx
+        add rcx, 8
+        shl rcx, 3
+        mov ebx, 0FFh
+        shl rbx, cl
+        not rbx
+        push rbx
+        dec rax
+        mov rsi, rax
         mov rdi, [rsp+16]
-        call array_get_size
-        pop rsi
-        mov rcx, rax
-        mov rdi, [rsp]
-        rep movsq
-        
-        mov rdi, [rsp+8]
-        call array_delete
-        pop rax
+        call array_get_by_index
+        mov rcx, [rax]
+        pop rbx
+        and rcx, rbx
+        mov [rax], rcx
+
+        pop rdi
+        pop rdi
+        call array_to_usual
 
         leave
         ret
@@ -166,4 +157,24 @@ segment .text
         cbw
 
         leave
+        ret
+    
+    simple_print:
+        ;prints string from rdi
+        ;...and does it really slow
+        mov al, byte [rdi]
+        cmp al, 0
+        je exit_simple_print
+            push rdi
+
+            mov eax, 1
+            mov rsi, rdi
+            mov edi, 1
+            mov edx, 1
+            syscall
+            
+            pop rdi
+            inc rdi
+            jmp simple_print
+        exit_simple_print:
         ret

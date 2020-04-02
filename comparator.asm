@@ -6,7 +6,7 @@ segment .text
         ;param rsi - 2nd strng
         ;compares strings by the alphabet
         ;NOTE: strings must be contained in fields of length that divisible by 16
-        ;NOTE: also fields with strings must be aligned to 16
+        ;NOTE: also fields with strings should be aligned to 16
         ;returns 1 if 1st string is greater, -1 if it's less and 0 if they are equal
         ;well, it might work pretty fast...
         push rbp
@@ -14,9 +14,29 @@ segment .text
 
         xor rax, rax ;will be a result
         xor r8, r8 ;stop flag
+
+        mov r11w, di
+        mov r12w, si
+        and r11w, 1111b
+        and r12w, 1111b
+
         comparing:
-            movdqa xmm0, [rdi]
-            movdqa xmm1, [rsi]
+            cmp r11w, 0
+            jne not_aligned_1
+                movdqa xmm0, [rdi]
+                jmp continue_alignment_check
+            not_aligned_1:
+                movdqu xmm0, [rdi]
+            continue_alignment_check:
+            
+            cmp r12w, 0
+            jne not_aligned_2
+                movdqa xmm1, [rsi]
+                jmp end_alignment_check
+            not_aligned_2:
+                movdqu xmm1, [rsi]
+            end_alignment_check:
+
             add rdi, 16
             add rsi, 16
             ;read xmmword from each string
