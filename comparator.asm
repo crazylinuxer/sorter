@@ -10,13 +10,21 @@ segment .text
         ;returns 1 if 1st string is greater, -1 if it's less and 0 if they are equal
         ;well, it might work pretty fast...
 
-        xor rax, rax ;will be a result
+        xor eax, eax ;will be a result
         xor r8, r8 ;stop flag
 
         mov r11w, di
         mov r12w, si
         and r11w, 1111b
         and r12w, 1111b
+
+        mov r15, 0001020304050607h
+        movq xmm4, r15
+        shufpd xmm4, xmm4, 01b
+        mov r15, 08090A0B0C0D0E0Fh
+        pxor xmm5, xmm5
+        movq xmm5, r15
+        paddb xmm4, xmm5
 
         comparing:
             cmp r11w, 0
@@ -39,46 +47,41 @@ segment .text
             add rsi, 16
             ;read xmmword from each string
 
-            mov r15, 0001020304050607h
-            movq xmm3, r15
-            shufpd xmm3, xmm3, 00b
-            mov r15, 08090A0B0C0D0E0Fh
-            movq xmm3, r15
-            pshufb xmm0, xmm3
-            pshufb xmm1, xmm3
+            pshufb xmm0, xmm4
+            pshufb xmm1, xmm4
             ;translated little-endian to big-endian
 
             movdqa xmm2, xmm0
             pxor xmm3, xmm3
             pcmpeqb xmm3, xmm0
-            pmovmskb eax, xmm3
-            cmp ax, 0
+            pmovmskb ecx, xmm3
+            cmp cx, 0
             je continue_1
                 inc r8
             continue_1:
             pxor xmm3, xmm3
             pcmpeqb xmm3, xmm1
-            pmovmskb eax, xmm3
-            cmp ax, 0
+            pmovmskb ecx, xmm3
+            cmp cx, 0
             je continue_2
                 inc r8
             continue_2:
             
             pcmpgtb xmm0, xmm1
-            pmovmskb eax, xmm0 ;mask of 1 and 2 strings substraction
+            pmovmskb ecx, xmm0 ;mask of 1 and 2 strings comparsion
             pcmpgtb xmm1, xmm2
-            pmovmskb ebx, xmm1 ;mask of 2 and 1 strings substraction
-            cmp ax, bx
+            pmovmskb ebx, xmm1 ;mask of 2 and 1 strings comparsion
+            cmp ecx, ebx
             jg greater
             jl less
             jmp check_if_end
                 
             greater:
-                dec rax
+                inc eax
                 inc r8
                 jmp check_if_end
             less:
-                inc rax
+                dec rax
                 inc r8
 
             check_if_end:
