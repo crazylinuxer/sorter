@@ -1,18 +1,22 @@
 #!/bin/bash
 
 yasm -f elf64 -g dwarf2 ./main.asm &&\
-yasm -f elf64 -g dwarf2 ./communicator.asm &&\
-yasm -f elf64 -g dwarf2 ./heap.asm &&\
-yasm -f elf64 -g dwarf2 ./dynamic_array.asm &&\
-yasm -f elf64 -g dwarf2 ./reader.asm &&\
-yasm -f elf64 -g dwarf2 ./writer.asm &&\
-yasm -f elf64 -g dwarf2 ./comparator.asm &&\
+yasm -f elf64 -g dwarf2 ./strings_processing/communicator.asm -o ./strings_processing/communicator.o &&\
+yasm -f elf64 -g dwarf2 ./structures/heap.asm -o ./structures/heap.o &&\
+yasm -f elf64 -g dwarf2 ./structures/dynamic_array.asm -o ./structures/dynamic_array.o &&\
+yasm -f elf64 -g dwarf2 ./file_interactions/reader.asm -o ./file_interactions/reader.o &&\
+yasm -f elf64 -g dwarf2 ./file_interactions/writer.asm -o ./file_interactions/writer.o &&\
+yasm -f elf64 -g dwarf2 ./structures/deque.asm -o ./structures/deque.o &&\
+yasm -f elf64 -g dwarf2 ./strings_processing/comparator.asm -o ./strings_processing/comparator.o &&\
 
 gcc -Wall -m64 -no-pie -gdwarf-2 -o ./sorter \
-    ./main.o ./heap.o ./dynamic_array.o \
-    ./reader.o ./writer.o \
-    ./comparator.o ./communicator.o &&\
+    ./main.o ./structures/heap.o ./structures/dynamic_array.o \
+    ./file_interactions/reader.o ./file_interactions/writer.o ./structures/deque.o \
+    ./strings_processing/comparator.o ./strings_processing/communicator.o &&\
 
 rm -rf ./*.o &&\
+rm -rf ./strings_processing/*.o &&\
+rm -rf ./file_interactions/*.o &&\
+rm -rf ./structures/*.o &&\
 
 ./sorter

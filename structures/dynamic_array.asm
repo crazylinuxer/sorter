@@ -4,18 +4,19 @@ extern posix_memalign
 
 extern exit
 
-global array_init
-global array_delete
-global array_delete_each
-global array_append_value
-global array_pop_value
-global array_get_by_index
-global array_shrink_to_fit
-global array_get_size
-global array_extend
-global array_extend_from_mem
-global array_clear
-global array_to_usual
+global array_init            ;*initializes dynamic array
+global array_delete          ;deletes dynamic array
+global array_delete_each     ;frees memory using each item as pointer and then deletes array itself
+global array_append_value    ;*appends value to the end
+global array_pop_value       ;returns value from the end and decreases length
+global array_get_by_index    ;returns address of item or nullptr if it doesn't exist
+global array_shrink_to_fit   ;*reallocates minimal memory size to contain data
+global array_get_size        ;returns size of array in O(1) time
+global array_extend          ;*extends array by the items of other array
+global array_extend_from_mem ;*extends array by the qwords from mem
+global array_clear           ;zeroes array length
+global array_to_usual        ;*casts the dynamic array to usual array in-place
+;functions that marked with "*" return a pointer to allocated memory
 
 
 INIT_ALIGNMENT equ 16
@@ -170,11 +171,20 @@ segment .text
     array_get_by_index:
         ;param rdi - address of array
         ;param rsi - index
-        ;returns address of item
-        mov rax, rsi
-        shl rax, LOG2_ITEM_SIZE
-        add rax, rdi
-        add rax, dynamic.data
+        ;returns address of item or nullptr if it doesn't exist
+        mov rax, [rdi+dynamic.length]
+        dec rax
+        cmp rax, rsi
+        jl return_nullptr_by_index
+        cmp rsi, 0
+        jl return_nullptr_by_index
+            mov rax, rsi
+            shl rax, LOG2_ITEM_SIZE
+            add rax, rdi
+            add rax, dynamic.data
+            ret
+        return_nullptr_by_index:
+        xor eax, eax
         ret
     
     array_pop_value:
