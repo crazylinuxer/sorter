@@ -34,7 +34,7 @@ segment .text
         
         call array_init
         push rax
-        push 0
+        sub rsp, 16
 
         mov rax, 1
         mov rdi, 1
@@ -43,19 +43,20 @@ segment .text
         syscall
 
         clear_and_input:
-            mov rdi, [rsp+8]
+            mov rdi, [rbp-8]
             call array_clear
             input_char:
-                xor rax, rax
-                mov qword [rsp], 0
+                xor eax, eax
+                mov qword [rbp-16], 0
                 mov rdi, 2
-                mov rsi, rsp
+                mov rsi, rbp
+                sub rsi, 16
                 mov rdx, 8
                 syscall
-                mov rdi, [rsp+8]
-                mov rsi, [rsp]
+                mov rdi, [rbp-8]
+                mov rsi, [rbp-16]
                 call array_append_value
-                mov rax, [rsp]
+                mov rax, [rbp-16]
                 mov rcx, 8
                 checking_for_endl:
                     cmp al, 10
@@ -64,11 +65,11 @@ segment .text
                 loop checking_for_endl
                 jmp input_char
             input_char_end:
-            mov rdi, [rsp+8]
-            push rcx
+            mov rdi, [rbp-8]
+            mov [rbp-24], rcx
             call array_get_size
-            mov [rsp], rcx
-            mov [rsp+8], rax
+            mov rcx, [rbp-24]
+            mov [rbp-16], rax
             cmp rcx, 8
             jne end_input_error
             cmp rax, 1
@@ -94,15 +95,14 @@ segment .text
         push rbx
         dec rax
         mov rsi, rax
-        mov rdi, [rsp+16]
+        mov rdi, [rbp-8]
         call array_get_by_index
         mov rcx, [rax]
         pop rbx
         and rcx, rbx
         mov [rax], rcx
 
-        pop rdi
-        pop rdi
+        mov rdi, [rbp-8]
         call array_to_usual
 
         leave

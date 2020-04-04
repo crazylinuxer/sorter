@@ -15,8 +15,6 @@ gcc -Wall -m64 -no-pie -gdwarf-2 -o ./sorter \
     ./strings_processing/comparator.o ./strings_processing/communicator.o &&\
 
 rm -rf ./*.o &&\
-rm -rf ./strings_processing/*.o &&\
-rm -rf ./file_interactions/*.o &&\
-rm -rf ./structures/*.o &&\
+rm -rf ./*/*.o &&\
 
 ./sorter

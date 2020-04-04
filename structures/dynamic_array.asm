@@ -3,20 +3,29 @@ extern free
 extern posix_memalign
 
 extern exit
+extern deque_init
+extern deque_get_length
+extern deque_push_left
+extern deque_push_right
+extern deque_pop_left
 
-global array_init            ;*initializes dynamic array
-global array_delete          ;deletes dynamic array
-global array_delete_each     ;frees memory using each item as pointer and then deletes array itself
-global array_append_value    ;*appends value to the end
-global array_pop_value       ;returns value from the end and decreases length
-global array_get_by_index    ;returns address of item or nullptr if it doesn't exist
-global array_shrink_to_fit   ;*reallocates minimal memory size to contain data
-global array_get_size        ;returns size of array in O(1) time
-global array_extend          ;*extends array by the items of other array
-global array_extend_from_mem ;*extends array by the qwords from mem
-global array_clear           ;zeroes array length
-global array_to_usual        ;*casts the dynamic array to usual array in-place
+global array_init              ;*initializes dynamic array
+global array_delete            ;deletes dynamic array
+global array_delete_each       ;frees memory using each item as pointer and then deletes array itself
+global array_append_value      ;*appends value to the end
+global array_pop_value         ;returns value from the end and decreases length
+global array_get_by_index      ;returns address of item or nullptr if it doesn't exist
+global array_shrink_to_fit     ;*reallocates minimal memory size to contain data
+global array_get_size          ;returns size of array in O(1) time
+global array_extend            ;*extends array by the items of other array
+global array_extend_from_mem   ;*extends array by the qwords from mem
+global array_clear             ;zeroes array length
+global array_to_usual          ;*casts the dynamic array to usual array in-place
+global array_extend_from_deque ;*extends array from deque contents; WARNING: IT CLEARS THE DEQUE!
+global array_to_deque          ;*casts array to deque (does not change array, returns ptr to deque)
+global array_to_reversed_deque ;*casts array to reversed deque (does not change array, returns ptr to deque)
 ;functions that marked with "*" return a pointer to allocated memory
+;look function definition to see some details
 
 
 INIT_ALIGNMENT equ 16
@@ -190,18 +199,28 @@ segment .text
     array_pop_value:
         ;param rdi - address of array
         ;deletes last item and returns its value
+        push rbp
+        mov rbp, rsp
+
         mov rdx, [rdi+dynamic.length]
         cmp rdx, 0
         jng nothing_to_pop
             dec rdx
-            mov [rdi+dynamic.length], rdx
+            push rdx
+            push rdi
             mov rsi, rdx
             call array_get_by_index
+            pop rdi
+            pop rdx
+            mov [rdi+dynamic.length], rdx
             mov rax, [rax]
-            ret
+            jmp end_pop
         nothing_to_pop:
-            mov rax, 0
-            ret
+            xor eax, eax
+        end_pop:
+
+        leave
+        ret
     
     array_shrink_to_fit:
         ;param rdi - address of array
@@ -286,7 +305,7 @@ segment .text
     array_to_usual:
         ;param rdi - address of array
         ;casts the dynamic array to usual array
-        ;leaves some free space in the end
+        ;leaves some free space in the end (with some trash - be careful!)
         ;returns address of usual array
         push rbp
         mov rbp, rsp
@@ -301,6 +320,91 @@ segment .text
         inc rcx
         rep movsq
         pop rax
+
+        leave
+        ret
+
+    array_extend_from_deque:
+        ;param rdi - address of array
+        ;param rsi - address of deque
+        ;WARNING: it clears the deque
+        push rbp
+        mov rbp, rsp
+
+        push rdi
+        push rsi
+        mov rdi, rsi
+        call deque_get_length
+        cmp rax, 0
+        je empty_deque
+            mov rcx, rax
+            extending:
+                push rcx
+                mov rdi, [rbp-16]
+                call deque_pop_left
+                mov rsi, rax
+                mov rdi, [rbp-8]
+                call array_append_value
+                mov [rbp-8], rax
+                pop rcx
+                loop extending
+        empty_deque:
+        mov rax, [rbp-8]
+
+        leave
+        ret
+
+    array_to_deque:
+        ;param rdi - address of array
+        ;returns ptr to deque, does not change array
+        push rbp
+        mov rbp, rsp
+        
+        mov rsi, deque_push_left
+        call array_to_deque_common
+        
+        leave
+        ret
+
+    array_to_reversed_deque:
+        ;param rdi - address of array
+        ;returns ptr to reversed deque, does not change array
+        push rbp
+        mov rbp, rsp
+
+        mov rsi, deque_push_right
+        call array_to_deque_common
+
+        leave
+        ret
+    
+    array_to_deque_common:
+        ;param rdi - address of array
+        ;param rsi - function (how to push to deque)
+        push rbp
+        mov rbp, rsp
+        
+        push rdi
+        push rsi
+        call deque_init
+        push rax
+        mov rdi, [rbp-8]
+        mov rcx, [rdi+dynamic.length]
+        cmp rcx, 0
+        je end_casting_to_deque
+            start_casting_to_deque:
+                push rcx
+                mov rax, rcx
+                dec rax
+                shl rax, LOG2_ITEM_SIZE
+                add rax, [rbp-8]
+                mov rsi, [rax+dynamic.data]
+                mov rdi, [rbp-24]
+                call [rbp-16]
+                pop rcx
+                loop start_casting_to_deque
+        end_casting_to_deque:
+        mov rax, [rbp-24]
 
         leave
         ret
