@@ -4,7 +4,6 @@ extern array_get_by_index
 extern array_get_size
 
 global heap_get_min   ;returns min value of heap
-global heap_get_count ;returns count of items in heap
 global heap_append    ;appends value to the heap
 global heap_pop       ;pops min value from the heap
 ;look function definition to see some details
@@ -27,11 +26,6 @@ segment .text
         call array_get_by_index
         mov rax, [rax]
         ret
-    
-    heap_get_count:
-        ;param rdi - address of heap
-        call array_get_size
-        ret
 
     heap_append:
         ;param rdi - address of heap
@@ -40,6 +34,18 @@ segment .text
         ;appends value to heap
         push rbp
         mov rbp, rsp
+
+        push rdi ;[rbp-8] - heap address
+        push rsi ;[rbp-16] - function
+        mov rsi, rdx
+        call array_append_value
+        mov rdi, [rbp-8]
+        call array_get_size
+        dec rax
+        mov rdx, rax
+        pop rsi
+        pop rdi
+        call flow_up
 
         leave
         ret
@@ -51,6 +57,39 @@ segment .text
         push rbp
         mov rbp, rsp
 
+        push rdi ;[rbp-8] - heap address
+        push rsi ;[rbp-16] - function
+        call array_get_size
+        cmp rax, 0
+        jne not_zero
+            xor eax, eax
+            dec rax
+            leave
+            ret
+        not_zero:
+        cmp rax, 1
+        jne not_one
+            mov rdi, [rbp-8]
+            call array_pop_value
+            leave
+            ret
+        not_one:
+        mov rdi, [rbp-8]
+        mov rsi, rax
+        dec rsi
+        call array_get_by_index
+        push rax
+        mov rdi, [rbp-8]
+        call array_pop_value
+        pop rbx
+        mov [rbx], rax
+        push rax
+        mov rdi, [rbp-8]
+        xor edx, edx
+        mov esi, [rbp-16]
+        call flow_down
+
+        pop rax
         leave
         ret
     
@@ -61,6 +100,43 @@ segment .text
         push rbp
         mov rbp, rsp
 
+        push rdi ;[rbp-8] - heap address
+        push rsi ;[rbp-16] - function
+        push rdx ;[rbp-24] - index of current
+        mov rsi, rdx
+        call get_parent
+        cmp rax, -1
+            je fu_end
+        push rax ;[rbp-32] - parent of current
+        mov rsi, rax
+        mov rdi, [rbp-8]
+        call array_get_by_index
+        push rax
+        mov rsi, [rbp-24]
+        mov rdi, [rbp-8]
+        call array_get_by_index
+        mov rsi, [rax]
+        mov rdi, [rbp-40]
+        mov rdi, [rdi]
+        call [rbp-16]
+        cmp rax, 1
+        jne fu_not_greater
+            mov rsi, [rbp-24]
+            mov rdi, [rbp-8]
+            call array_get_by_index
+            mov r8, [rax]
+            pop rbx
+            mov r9, [rbx]
+            mov [rbx], r8
+            mov [rax], r9
+        fu_not_greater:
+        pop rdx
+        add rsp, 8
+        pop rsi
+        pop rdi
+        call flow_up
+
+        fu_end:
         leave
         ret
     
@@ -71,6 +147,79 @@ segment .text
         push rbp
         mov rbp, rsp
 
+        push rdi ;[rbp-8] - heap address
+        push rsi ;[rbp-16] - function
+        push rdx ;[rbp-24] - index of current
+        mov rsi, rdx
+        call get_right
+        push rax ;[rbp-32] - right of current
+        mov rdi, [rbp-8]
+        mov rsi, [rbp-24]
+        call get_left
+        push rax ;[rbp-40] - left of current
+        cmp rax, -1
+        je fd_not_both
+        mov rax, [rbp-32]
+        cmp rax, -1
+        je fd_not_both
+            mov rdi, [rbp-8]
+            mov rsi, [rbp-40]
+            call array_get_by_index
+            push qword [rax]
+            mov rdi, [rbp-8]
+            mov rsi, [rbp-32]
+            call array_get_by_index
+            mov rdi, [rax]
+            pop rsi
+            call [rbp-16]
+            cmp rax, 1
+            jne fd_not_greater
+                mov qword [rbp-32], -1
+                jmp fd_not_both
+            fd_not_greater:
+                mov qword [rbp-40], -1
+        fd_not_both:
+        mov rax, [rbp-40]
+        cmp rax, -1
+        je fd_not_left
+            mov rsi, rax
+            call fd_xchg_internal
+            pop rdx
+            add rsp, 16
+            pop rsi
+            pop rdi
+            call flow_down
+            jmp fd_not_right
+        fd_not_left:
+        mov rax, [rbp-32]
+        cmp rax, -1
+        je fd_not_right
+            mov rsi, rax
+            call fd_xchg_internal
+            add rsp, 8
+            pop rdx
+            add rsp, 8
+            pop rsi
+            pop rdi
+            call flow_down
+        fd_not_right:
+        
+        jmp fd_end
+        fd_xchg_internal:
+            mov rdi, [rbp-8]
+            call array_get_by_index
+            push rax
+            mov rsi, [rbp-24]
+            mov rdi, [rbp-8]
+            call array_get_by_index
+            mov r8, [rax]
+            pop rbx
+            mov r9, [rbx]
+            mov [rbx], r8
+            mov [rax], r9
+            ret
+
+        fd_end:
         leave
         ret
     
