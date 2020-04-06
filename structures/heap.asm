@@ -12,11 +12,12 @@ global heap_pop       ;pops min value from the heap
 ;that wraps around the dynamic array structure.
 
 ;Some functions take parameter with function address.
-;Requirwmwnts to that function:
+;Requirements to that function in parameter:
 ;1. Takes first item in rdi and second in rsi
 ;2. Returns 0 if they are equal.
 ;3. Returns -1 if parameter in rdi is less than one in rsi.
 ;4. Returns 1 if parameter in rdi is greater than one in rsi.
+;5. You can change theese values to the opposite ones to get a max-heap
 
 segment .text
     heap_get_min:
@@ -75,18 +76,17 @@ segment .text
             ret
         not_one:
         mov rdi, [rbp-8]
-        mov rsi, rax
-        dec rsi
-        call array_get_by_index
+        call array_pop_value
         push rax
         mov rdi, [rbp-8]
-        call array_pop_value
+        xor esi, esi
+        call array_get_by_index
         pop rbx
-        mov [rbx], rax
-        push rax
+        push qword [rax]
+        mov [rax], rbx
         mov rdi, [rbp-8]
         xor edx, edx
-        mov esi, [rbp-16]
+        mov rsi, [rbp-16]
         call flow_down
 
         pop rax
@@ -182,7 +182,8 @@ segment .text
         mov rax, [rbp-40]
         cmp rax, -1
         je fd_not_left
-            mov rsi, rax
+            call fd_cmp_internal
+            mov rsi, [rbp-40]
             call fd_xchg_internal
             pop rdx
             add rsp, 16
@@ -194,7 +195,8 @@ segment .text
         mov rax, [rbp-32]
         cmp rax, -1
         je fd_not_right
-            mov rsi, rax
+            call fd_cmp_internal
+            mov rsi, [rbp-32]
             call fd_xchg_internal
             add rsp, 8
             pop rdx
@@ -217,6 +219,23 @@ segment .text
             mov r9, [rbx]
             mov [rbx], r8
             mov [rax], r9
+            ret
+        fd_cmp_internal:
+            mov rsi, rax
+            mov rdi, [rbp-8]
+            call array_get_by_index
+            push qword [rax]
+            mov rsi, [rbp-24]
+            mov rdi, [rbp-8]
+            call array_get_by_index
+            mov rdi, [rax]
+            pop rsi
+            call [rbp-16]
+            cmp rax, 1
+            je fd_cmp_end
+                add rsp, 8
+                jmp fd_not_right
+            fd_cmp_end:
             ret
 
         fd_end:
