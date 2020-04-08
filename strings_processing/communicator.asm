@@ -1,4 +1,5 @@
 extern malloc
+extern free
 
 extern array_init
 extern array_append_value
@@ -8,6 +9,7 @@ extern array_clear
 extern array_delete
 extern array_pop_value
 extern array_to_usual
+extern filemgr_try_open
 
 global ask_file
 global ask_mode
@@ -17,16 +19,47 @@ global simple_print
 segment .rodata
     mode_message db "Choose operation mode:", 10
                  db "    [1] - Fast mode (uses A LOT of memory)", 10
-                 db "    [2] - Normal mode (uses less memory.. but still uses)", 10
+                 db "    [2] - Normal mode (uses less memory.. but still uses some)", 10
                  db "    [3] - Slow mode (does not use any additional memory)", 10, 10, 0
     mode_message_len equ $-mode_message
     err_message  db "Incorrect input, try again!", 10, 0
     err_message_len equ $-err_message
+    cannot_open_message  db "Can not open file, try again!", 10, 0
+    cannot_open_message_len equ $-cannot_open_message
     file_message db "Enter the file name: ", 0
     file_message_len equ $-file_message
 
 segment .text
     ask_file:
+        ;takes no arguments
+        ;returns string entered from keyboard
+        ;tests posibility to open file
+        push rbp
+        mov rbp, rsp
+
+        start_ask_file:
+            call ask_filename
+            push rax
+            mov rdi, rax
+            call filemgr_try_open
+            cmp rax, 0
+            jnl ask_file_ok
+                pop rdi
+                call free
+                mov rax, 1
+                xor edi, edi
+                mov rsi, cannot_open_message
+                mov rdx, cannot_open_message_len
+                syscall
+                jmp start_ask_file
+
+        ask_file_ok:
+        pop rax
+
+        leave
+        ret
+
+    ask_filename:
         ;takes no arguments
         ;returns string entered from keyboard
         push rbp
@@ -78,9 +111,14 @@ segment .text
             jmp end_input_error
             input_error:
                 mov rax, 1
-                mov rdi, 0
+                xor edi, edi
                 mov rsi, err_message
                 mov rdx, err_message_len
+                syscall
+                mov rax, 1
+                mov rdi, 1
+                mov rsi, file_message
+                mov rdx, file_message_len
                 syscall
                 jmp clear_and_input
             end_input_error:
@@ -122,7 +160,7 @@ segment .text
         
         read_mode:
             push 0
-            xor rax, rax
+            xor eax, eax
             mov rdi, 2
             mov rsi, rsp
             mov rdx, 2
@@ -146,7 +184,7 @@ segment .text
 
                 continue_mode_error:
                 mov rax, 1
-                mov rdi, 0
+                xor edi, edi
                 mov rsi, err_message
                 mov rdx, err_message_len
                 syscall
