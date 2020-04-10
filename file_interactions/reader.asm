@@ -115,7 +115,22 @@ segment .text
         ;reads block of text to buffer
         push rbp
         mov rbp, rsp
+
+        push rdi ;[rbp-8] - reader
+        mov rdi, [rdi+file_reader.block_size]
+        call malloc
+        push rax ;[rbp-16] - buffer address
+        mov rsi, rax
+        xor eax, eax
+        mov rdi, [rbp-8]
+        mov rdx, [rdi+file_reader.block_size]
+        mov rdi, [rdi+file_reader.descriptor]
+        syscall
+        pop rax
         
+        ;todo finish
+        ;todo check 0Ah in eof and append if absent
+
         leave
         ret
     

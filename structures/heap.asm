@@ -3,16 +3,16 @@ extern array_pop_value
 extern array_get_by_index
 extern array_get_size
 
-global heap_get_min   ;returns min value of heap
-global heap_append    ;appends value to the heap
-global heap_pop       ;pops min value from the heap
+global heap_get_top ;returns top value of heap
+global heap_append  ;appends value to the heap
+global heap_pop     ;pops top value from the heap
 ;look function definition to see some details
 
-;This min-heap is just basically a set of functions
+;This heap is just basically a set of functions
 ;that wraps around the dynamic array structure.
 
 ;Some functions take parameter with function address.
-;Requirements to that function in parameter:
+;Requirements to that function in parameter (for min-heap):
 ;1. Takes first item in rdi and second in rsi
 ;2. Returns 0 if they are equal.
 ;3. Returns -1 if parameter in rdi is less than one in rsi.
@@ -20,9 +20,9 @@ global heap_pop       ;pops min value from the heap
 ;5. You can change theese values to the opposite ones to get a max-heap
 
 segment .text
-    heap_get_min:
+    heap_get_top:
         ;param rdi - address of heap
-        ;returns min value of heap
+        ;returns top value of heap
         xor esi, esi
         call array_get_by_index
         mov rax, [rax]
@@ -54,7 +54,7 @@ segment .text
     heap_pop:
         ;param rdi - address of heap
         ;param rsi - address of function that compares values
-        ;deletes and returns min value of heap
+        ;deletes and returns top value of heap
         push rbp
         mov rbp, rsp
 
