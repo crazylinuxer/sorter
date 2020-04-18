@@ -19,8 +19,8 @@ global simple_print
 segment .rodata
     mode_message db "Choose operation mode:", 10
                  db "    [1] - Fast mode (uses A LOT of memory)", 10
-                 db "    [2] - Normal mode (uses less memory.. but still uses some)", 10
-                 db "    [3] - Slow mode (does not use any additional memory)", 10, 10, 0
+                 db "    [2] - (NOT AVAILABLE YET) Normal mode (uses less memory.. but still uses some)", 10
+                 db "    [3] - (NOT AVAILABLE YET) Slow mode (does not use any additional memory)", 10, 10, 0
     mode_message_len equ $-mode_message
     err_message  db "Incorrect input, try again!", 10, 0
     err_message_len equ $-err_message

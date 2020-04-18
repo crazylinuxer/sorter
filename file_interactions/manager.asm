@@ -1,14 +1,18 @@
 extern posix_memalign
 extern realloc
+extern free
 
 extern array_append_value
 extern array_get_by_index
 extern array_get_size
+extern array_pop_value
+extern array_clear
 
 global filemgr_try_open
 global filemgr_close
 global filemgr_block_to_buffer
 global filemgr_buffer_to_block
+global filemgr_clear_buffer
 
 segment .text
     filemgr_try_open:
@@ -210,6 +214,56 @@ segment .text
 
         mov rax, [rbp-48]
         
+        leave
+        ret
+    
+    filemgr_clear_buffer:
+        ;param rdi - address of buffer
+        ;param rsi - bool "leave last item in buffer as first"
+        push rbp
+        mov rbp, rsp
+
+        push rdi ;[rbp-8] - address of buffer
+        push rsi ;[rbp-16] - leave last
+        call array_get_size
+        cmp eax, 0
+        jng nothing_to_clear
+            mov rsi, [rbp-16]
+            cmp rsi, 0
+            je just_clearing
+                mov rdi, [rbp-8]
+                call array_pop_value
+                push rax ;[rbp-24] - value to append
+            just_clearing:
+            mov rdi, [rbp-8]
+            call array_get_size
+            cmp eax, 0
+            je not_freeing
+                mov ecx, eax
+                freeing:
+                    push rcx
+                    mov rsi, rcx
+                    dec rsi
+                    mov rdi, [rbp-8]
+                    call array_get_by_index
+                    mov rdi, [rax]
+                    call free
+                    pop rcx
+                    loop freeing
+            not_freeing:
+            mov rdi, [rbp-8]
+            call array_clear
+            pop rsi
+            pop rax
+            cmp rax, 0
+            je not_appending_after_clear
+                mov rdi, [rbp-8]
+                call array_append_value
+                mov [rbp-8], rax
+            not_appending_after_clear:
+        nothing_to_clear:
+        mov rax, [rbp-8]
+
         leave
         ret
     

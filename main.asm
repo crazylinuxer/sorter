@@ -2,6 +2,7 @@ global main
 global exit
 global exit_normally
 
+
 segment .text
     main:
         push rbp
