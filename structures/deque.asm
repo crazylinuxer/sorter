@@ -42,7 +42,8 @@ DEQUE_SIZE      equ 24
 
 
 segment .text
-    create_node:
+    create_deque_node:
+    global create_deque_node ;only for iterator!
         ;initializes and returns ptr to deque node
         push rbp
         mov rbp, rsp
@@ -131,7 +132,7 @@ segment .text
 
         push rdi
         push rsi
-        call create_node
+        call create_deque_node
         pop qword [rax+deque_node.data]
         pop rdi
         mov r8, [rdi+deque.last]
@@ -162,7 +163,7 @@ segment .text
 
         push rdi
         push rsi
-        call create_node
+        call create_deque_node
         pop qword [rax+deque_node.data]
         pop rdi
         mov r8, [rdi+deque.first]
