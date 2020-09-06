@@ -136,7 +136,7 @@ segment .text
     simple_print:
         ;prints string from rdi
         ;...and does it really slow
-        mov al, byte [rdi]
+        mov al, [rdi]
         cmp al, 0
         je exit_simple_print
             push rdi
