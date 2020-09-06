@@ -174,14 +174,14 @@ segment .text
             del_right_not_null:
 
             mov rcx, [rbp-8]
-            mov rbx, [rcx+deque.len]
-            dec rbx
-            mov [rcx+deque.len], rbx
+            mov r8, [rcx+deque.len]
+            dec r8
+            mov [rcx+deque.len], r8
 
-            mov rbx, [rax+deque_node.next]
-            mov [rbx+deque_node.prev], rdi
-            mov rbx, [rax+deque_node.prev]
-            mov [rbx+deque_node.next], rsi
+            mov r8, [rax+deque_node.next]
+            mov [r8+deque_node.prev], rdi
+            mov r8, [rax+deque_node.prev]
+            mov [r8+deque_node.next], rsi
             push rdi ;[rbp-24] - left
             push rsi ;[rbp-32] - right
             mov rdi, rax
@@ -214,9 +214,9 @@ segment .text
             push rax ;[rbp-24] - node
 
             mov rdi, [rbp-8]
-            mov rbx, [rdi+deque.len]
-            inc rbx
-            mov [rdi+deque.len], rbx
+            mov r8, [rdi+deque.len]
+            inc r8
+            mov [rdi+deque.len], r8
 
             mov rdi, [rax+deque_node.next]
             cmp rdi, 0
@@ -229,12 +229,12 @@ segment .text
                 jmp end_insert_right
             ins_right_not_null:
             call create_deque_node
-            mov rbx, [rbp-24]
-            mov rcx, [rbx+deque_node.next]
+            mov r8, [rbp-24]
+            mov rcx, [r8+deque_node.next]
 
             mov [rax+deque_node.next], rcx
-            mov [rax+deque_node.prev], rbx
-            mov [rbx+deque_node.next], rax
+            mov [rax+deque_node.prev], r8
+            mov [r8+deque_node.next], rax
             mov [rcx+deque_node.prev], rax
             mov rdi, [rbp-16]
             mov [rax+deque_node.data], rdi
@@ -262,9 +262,9 @@ segment .text
             push rax ;[rbp-24] - node
 
             mov rdi, [rbp-8]
-            mov rbx, [rdi+deque.len]
-            inc rbx
-            mov [rdi+deque.len], rbx
+            mov r8, [rdi+deque.len]
+            inc r8
+            mov [rdi+deque.len], r8
 
             mov rdi, [rax+deque_node.prev]
             cmp rdi, 0
@@ -277,12 +277,12 @@ segment .text
                 jmp end_insert_right
             ins_left_not_null:
             call create_deque_node
-            mov rbx, [rbp-24]
-            mov rcx, [rbx+deque_node.prev]
+            mov r8, [rbp-24]
+            mov rcx, [r8+deque_node.prev]
 
             mov [rax+deque_node.prev], rcx
-            mov [rax+deque_node.next], rbx
-            mov [rbx+deque_node.prev], rax
+            mov [rax+deque_node.next], r8
+            mov [r8+deque_node.prev], rax
             mov [rcx+deque_node.next], rax
             mov rdi, [rbp-16]
             mov [rax+deque_node.data], rdi

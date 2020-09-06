@@ -282,18 +282,18 @@ segment .text
         call array_init
         push rax
         mov rdi, [rbp-8]
-        mov rbx, [rdi+deque.first]
+        mov rdx, [rdi+deque.first]
 
         appending:
-            cmp rbx, 0
+            cmp rdx, 0
             je end_appending
             mov rdi, [rbp-16]
-            mov rsi, [rbx+deque_node.data]
-            push rbx
+            mov rsi, [rdx+deque_node.data]
+            push rdx
             call array_append_value
-            pop rbx
+            pop rdx
             mov [rbp-16], rax
-            mov rbx, [rbx+deque_node.next]
+            mov rdx, [rdx+deque_node.next]
             jmp appending
         end_appending:
         mov rax, [rbp-16]
@@ -345,16 +345,16 @@ segment .text
         mov [rdi+deque.len], rax
 
         mov rax, [rdi+deque.last]
-        mov rbx, [rsi+deque.last]
+        mov rdx, [rsi+deque.last]
         mov rcx, [rsi+deque.first]
         
         cmp rax, 0
         jne first_not_empty
             mov [rdi+deque.first], rcx
         first_not_empty:
-        cmp rbx, 0
+        cmp rdx, 0
         je second_empty
-            mov [rdi+deque.last], rbx
+            mov [rdi+deque.last], rdx
             mov [rcx+deque_node.prev], rax
             cmp rax, 0
             je first_empty

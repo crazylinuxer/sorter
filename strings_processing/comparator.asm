@@ -13,21 +13,21 @@ segment .text
         xor eax, eax ;will be a result
         xor r8, r8 ;stop flag
 
-        mov r11w, di
-        mov r12w, si
-        and r11w, 1111b
-        and r12w, 1111b
+        mov r11b, dil
+        mov r10b, sil
+        and r11b, 1111b
+        and r10b, 1111b
 
-        mov r15, 0001020304050607h
-        movq xmm4, r15
+        mov r9, 0001020304050607h
+        movq xmm4, r9
         shufpd xmm4, xmm4, 01b
-        mov r15, 08090A0B0C0D0E0Fh
+        mov r9, 08090A0B0C0D0E0Fh
         pxor xmm5, xmm5
-        movq xmm5, r15
+        movq xmm5, r9
         paddb xmm4, xmm5
 
         comparing:
-            cmp r11w, 0
+            cmp r11b, 0
             jne not_aligned_1
                 movdqa xmm0, [rdi]
                 jmp continue_alignment_check
@@ -35,7 +35,7 @@ segment .text
                 movdqu xmm0, [rdi]
             continue_alignment_check:
             
-            cmp r12w, 0
+            cmp r10b, 0
             jne not_aligned_2
                 movdqa xmm1, [rsi]
                 jmp end_alignment_check
@@ -70,8 +70,8 @@ segment .text
             pcmpgtb xmm0, xmm1
             pmovmskb ecx, xmm0 ;mask of 1 and 2 strings comparsion
             pcmpgtb xmm1, xmm2
-            pmovmskb ebx, xmm1 ;mask of 2 and 1 strings comparsion
-            cmp ecx, ebx
+            pmovmskb edx, xmm1 ;mask of 2 and 1 strings comparsion
+            cmp ecx, edx
             jg greater
             jl less
             jmp check_if_end

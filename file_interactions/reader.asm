@@ -261,10 +261,10 @@ segment .text
         syscall
         push rax ;[rbp-24] - real block length
         
-        mov rbx, [rbp-8]
-        cmp eax, dword [rbx+file_reader.block_size]
+        mov r10, [rbp-8]
+        cmp eax, dword [r10+file_reader.block_size]
         je not_eof
-            mov byte [rbx+file_reader.eof], 1
+            mov byte [r10+file_reader.eof], 1
             cmp rax, 0
             jne not_eof
                 mov rdi, [rbp-16]
@@ -292,7 +292,7 @@ segment .text
                 leave
                 ret
         not_eof:
-        movzx edx, byte [rbx+file_reader.last_closed]
+        movzx edx, byte [r10+file_reader.last_closed]
         xor dl, 1
         
         push rdx ;[rbp-32] - not "properly closed"
@@ -312,8 +312,8 @@ segment .text
         mov [rdi+file_reader.last_closed], al
 
         mov rax, [rbp-8]
-        mov bl, [rax+file_reader.shrink]
-        cmp bl, 0
+        mov r10b, [rax+file_reader.shrink]
+        cmp r10b, 0
         je skip_shrinking
             mov rdi, [rbp-8]
             mov rdi, [rdi+file_reader.buffer]

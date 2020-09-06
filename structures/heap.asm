@@ -81,9 +81,9 @@ segment .text
         mov rdi, [rbp-8]
         xor esi, esi
         call array_get_by_index
-        pop rbx
+        pop r10
         push qword [rax]
-        mov [rax], rbx
+        mov [rax], r10
         mov rdi, [rbp-8]
         xor edx, edx
         mov rsi, [rbp-16]
@@ -125,9 +125,9 @@ segment .text
             mov rdi, [rbp-8]
             call array_get_by_index
             mov r8, [rax]
-            pop rbx
-            mov r9, [rbx]
-            mov [rbx], r8
+            pop r10
+            mov r9, [r10]
+            mov [r10], r8
             mov [rax], r9
         fu_not_greater:
         pop rdx
@@ -215,9 +215,9 @@ segment .text
             mov rdi, [rbp-8]
             call array_get_by_index
             mov r8, [rax]
-            pop rbx
-            mov r9, [rbx]
-            mov [rbx], r8
+            pop r10
+            mov r9, [r10]
+            mov [r10], r8
             mov [rax], r9
             ret
         fd_cmp_internal:
@@ -251,8 +251,8 @@ segment .text
 
         push rsi
         call array_get_size
-        xor ebx, ebx
-        cmp rax, rbx
+        xor r10d, r10d
+        cmp rax, r10
         jg parent_normal
         parent_not_nornal:
             xor eax, eax
@@ -261,7 +261,7 @@ segment .text
             ret
         parent_normal:
         pop rax
-        cmp rax, rbx
+        cmp rax, r10
         jng parent_not_nornal
         dec rax
         shr rax, 1

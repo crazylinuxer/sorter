@@ -77,11 +77,11 @@ segment .text
             
             mov rdi, [rbp-8]
             mov rcx, [rbp-32]
-            mov bl, [rdi]
-            cmp bl, 0
+            mov dl, [rdi]
+            cmp dl, 0
             jne continue_splitting_1
-                mov bh, [rdi-1]
-                cmp bh, 0Ah
+                mov dh, [rdi-1]
+                cmp dh, 0Ah
                 je eol_detected
                     mov qword [rbp-48], 1
                     mov qword [rbp-56], 1
@@ -91,7 +91,7 @@ segment .text
                     mov qword [rbp-56], 1
                     jmp skip_appending
             continue_splitting_1:
-            cmp bl, 0Ah
+            cmp dl, 0Ah
             jne continue_splitting_2
                 push 1
                 jmp skip_appending
@@ -104,8 +104,8 @@ segment .text
                 mov r8b, [rdi]
                 cmp r8b, 0Ah
                 je not_end
-                    mov rdx, [rbp-40]
-                    cmp rdx, 1
+                    mov r9, [rbp-40]
+                    cmp r9, 1
                     jne not_end
                         mov qword [rbp-48], 1
             not_end:
@@ -113,11 +113,11 @@ segment .text
             neg rcx
             push rcx ;[rbp-64] - length of current string
             inc rcx
-            mov rdx, [rbp-40]
-            cmp rdx, 1
+            mov r9, [rbp-40]
+            cmp r9, 1
             jne not_try_to_add
-                mov rdx, [rbp-24]
-                cmp rdx, 1
+                mov r9, [rbp-24]
+                cmp r9, 1
                 jne not_try_to_add
                     mov rdi, [rbp-16]
                     mov rdi, [rdi]
@@ -136,7 +136,7 @@ segment .text
                         dec ecx
                         shr rcx, 1
                         xor eax, eax
-                        mov rbx, [rdi]
+                        mov rdx, [rdi]
                         repne scasb
                         mov rsi, rdi
                         pop r8
@@ -165,10 +165,10 @@ segment .text
                             mov byte [rdi+1], 0
                     jmp skip_appending
             not_try_to_add:
-                mov rdx, [rbp-64]
-                shr rdx, 4
-                inc rdx
-                shl rdx, 4
+                mov r9, [rbp-64]
+                shr r9, 4
+                inc r9
+                shl r9, 4
                 push 0
                 mov rdi, rsp
                 mov rsi, 16

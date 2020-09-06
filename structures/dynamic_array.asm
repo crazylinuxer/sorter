@@ -8,6 +8,9 @@ extern deque_get_length
 extern deque_push_left
 extern deque_push_right
 extern deque_pop_left
+extern iterator_get_start
+extern iterator_get_value
+extern iterator_get_right
 
 global array_init              ;*initializes dynamic array
 global array_delete            ;deletes dynamic array
@@ -42,7 +45,7 @@ endstruc
 
 
 segment .rodata
-    alloc_error db "An error occured while allocating memory!", 10, 0
+    alloc_error db "An error occurred while allocating memory!", 10, 0
     alloc_error_len equ $-alloc_error
 
 segment .text
@@ -304,7 +307,7 @@ segment .text
     
     array_to_usual:
         ;param rdi - address of array
-        ;casts the dynamic array to usual array
+        ;casts the dynamic array to usual array (it's the same as your parameter)
         ;leaves some free space in the end (with some trash - be careful!)
         ;returns address of usual array
         push rbp
@@ -331,26 +334,32 @@ segment .text
         push rbp
         mov rbp, rsp
 
-        push rdi
-        push rsi
-        mov rdi, rsi
-        call deque_get_length
-        cmp rax, 0
-        je empty_deque
-            mov rcx, rax
-            extending:
-                push rcx
-                mov rdi, [rbp-16]
-                call deque_pop_left
+        push rdi ;[rbp-8] - array
+        push rsi ;[rbp-16] - deque
+        
+        mov rdi, [rbp-16]
+        call iterator_get_start
+        push rax ;[rbp-24] - iterator
+        mov rdi, rax
+
+        extending:
+            push rcx
+            ;iterator is already in rdi
+            cmp rdi, 0
+            je end_extending
+                call iterator_get_value
                 mov rsi, rax
                 mov rdi, [rbp-8]
                 call array_append_value
                 mov [rbp-8], rax
+                mov rdi, [rbp-24]
+                call iterator_get_right
+                mov [rbp-24], rdi
                 pop rcx
-                loop extending
-        empty_deque:
-        mov rax, [rbp-8]
+            loop extending
+        end_extending:
 
+        mov rax, [rbp-8]
         leave
         ret
 
